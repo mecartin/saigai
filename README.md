@@ -416,6 +416,7 @@ Please ensure your code adheres to clear coding standards and is well-commented.
 * **TensorFlow** and **Keras** for the machine learning framework.
 * **Flask** for the web application framework.
 * **Hugging Face Transformers** and the **NLLB team** for the translation model.
+* Dataset Credits:
+   * Indian Sign Language (ISL) Dataset by Prathamesh Marikeri: [Kaggle Link](https://www.kaggle.com/datasets/prathumarikeri/indian-sign-language-isl/data)
+   * American Sign Language (ASL) 0-9,A-Z Dataset by Prathamesh Marikeri: [Kaggle Link](https://www.kaggle.com/datasets/prathumarikeri/american-sign-language-09az)
 * The creators of OpenCV and other open-source libraries used.
-
-```
