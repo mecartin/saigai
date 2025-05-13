@@ -3,6 +3,7 @@
 This project implements a real-time hand gesture recognition system using Google's MediaPipe framework. It can recognize both single-handed American Sign Language (ASL) gestures and two-handed Indian Sign Language (ISL) gestures from a webcam feed. Recognized gestures are used to form sentences, which can then be translated from English to Tamil. The system also includes functionality for logging new gesture data to extend its capabilities.
 
 ![Demo GIF](https://user-images.githubusercontent.com/37477845/102222442-c452cd00-3f26-11eb-93ec-c387c98231be.gif)
+
 *(The GIF shows the ASL functionality of the original project. This enhanced version includes ISL and other features described below.)*
 
 This project is an enhanced English-translated version with added features, based on the foundational work by [Kazuhito00/hand-gesture-recognition-using-mediapipe](https://github.com/Kazuhito00/hand-gesture-recognition-using-mediapipe).
