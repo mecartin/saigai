@@ -1,4 +1,4 @@
-# Real-Time Hand Gesture Recognition with MediaPipe, ASL/ISL Support, and Translation
+# Saigai - Real-Time Hand Gesture Recognition with MediaPipe, ASL/ISL Support, and Translation
 
 This project implements a real-time hand gesture recognition system using Google's MediaPipe framework. It can recognize both single-handed American Sign Language (ASL) gestures and two-handed Indian Sign Language (ISL) gestures from a webcam feed. Recognized gestures are used to form sentences, which can then be translated from English to Tamil. The system also includes functionality for logging new gesture data to extend its capabilities.
 
@@ -406,7 +406,7 @@ Please ensure your code adheres to clear coding standards and is well-commented.
 
 ## License
 
-This project does not explicitly state a license. The original base project by Kazuhito00 also does not specify a license in its `README.md`. Please be mindful of this if you plan to use or distribute this software. It's good practice to add an open-source license (e.g., MIT, Apache 2.0) if you intend for wider use and contribution.
+[Saigai](https://github.com/mecartin/saigai) is under [Apache v2 license](https://github.com/mecartin/saigai/blob/main/LICENSE).
 
 ## Acknowledgements
 
