@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saigai Project Flowchart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better arrow appearance if needed */
+        .arrow {
+            /* Ensure arrows align nicely between boxes */
+            align-self: center;
+            font-weight: bold;
+            color: #6b7280; /* gray-500 */
+        }
+        /* Ensure flex items wrap nicely on smaller screens */
+        .flowchart-container {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping */
+            justify-content: center; /* Center items when wrapped */
+            align-items: center;
+            gap: 0.5rem; /* Add gap between items */
+        }
+        .flowchart-box {
+            min-width: 100px; /* Minimum width for boxes */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-10 font-sans">
+
+    <div class="container mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold text-center text-blue-700 mb-8">Saigai Project Data Flow</h1>
+
+        <div class="flowchart-container">
+
+            <div class="flowchart-box bg-blue-100 border border-blue-300 p-4 rounded-lg text-center shadow">
+                <span class="text-blue-800 font-semibold">Webcam</span>
+                <p class="text-xs text-gray-600">(Input)</p>
+            </div>
+
+            <div class="arrow text-2xl mx-2">&rarr;</div>
+
+            <div class="flowchart-box bg-green-100 border border-green-300 p-4 rounded-lg text-center shadow">
+                <span class="text-green-800 font-semibold">MediaPipe</span>
+                <p class="text-xs text-gray-600">(Landmark Detection)</p>
+            </div>
+
+            <div class="arrow text-2xl mx-2">&rarr;</div>
+
+            <div class="flowchart-box bg-yellow-100 border border-yellow-300 p-4 rounded-lg text-center shadow">
+                <span class="text-yellow-800 font-semibold">Feature Vector</span>
+                <p class="text-xs text-gray-600">(Normalization)</p>
+            </div>
+
+            <div class="arrow text-2xl mx-2">&rarr;</div>
+
+            <div class="flowchart-box bg-purple-100 border border-purple-300 p-4 rounded-lg text-center shadow">
+                <span class="text-purple-800 font-semibold">Classifier</span>
+                <p class="text-xs text-gray-600">(TF Lite Model)</p>
+            </div>
+
+            <div class="arrow text-2xl mx-2">&rarr;</div>
+
+            <div class="flowchart-box bg-red-100 border border-red-300 p-4 rounded-lg text-center shadow">
+                <span class="text-red-800 font-semibold">Text</span>
+                <p class="text-xs text-gray-600">(English Sentence)</p>
+            </div>
+
+            <div class="arrow text-2xl mx-2">&rarr;</div>
+
+            <div class="flowchart-box bg-indigo-100 border border-indigo-300 p-4 rounded-lg text-center shadow">
+                <span class="text-indigo-800 font-semibold">NLLB</span>
+                <p class="text-xs text-gray-600">(Translation Model)</p>
+            </div>
+
+            <div class="arrow text-2xl mx-2">&rarr;</div>
+
+            <div class="flowchart-box bg-pink-100 border border-pink-300 p-4 rounded-lg text-center shadow">
+                <span class="text-pink-800 font-semibold">Translation</span>
+                <p class="text-xs text-gray-600">(Tamil Output)</p>
+            </div>
+
+        </div> </div> </body>
+</html>

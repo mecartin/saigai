@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saigai - Sign Language Recognition</title>
+    <style>
+        /* CSS includes darker theme and overlay styles */
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e1e1e1;
+            --text-muted: #a0a0a0;
+            --primary-color: #0d6efd;
+            --primary-hover: #0b5ed7;
+            --border-color: #3a3a3a;
+            --input-bg: #2a2a2a;
+            --input-border: #4a4a4a;
+            --selected-bg: #0a4a9e;
+            --progress-bar-bg: #444;
+            --progress-bar-fill: var(--primary-color);
+            --status-bg: #181818;
+            --status-text: #ccc;
+            --instruction-color: #888;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-bottom: 60px; /* Space for status bar */
+            /* Added transition for potential future body effects */
+            transition: background-color 0.3s ease;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin: 20px 0 5px 0;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        h2.subtitle {
+            color: var(--text-muted);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            font-weight: 400;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1600px;
+            padding: 15px;
+            box-sizing: border-box;
+            gap: 25px;
+        }
+
+        /* --- Added Transitions & Hover Effects for Sections --- */
+        .video-section,
+        .controls-section {
+            flex: 1; /* Use flex: 1 for equal distribution initially */
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            margin: 10px;
+            border: 1px solid var(--border-color);
+            position: relative; /* Needed for overlay */
+            overflow: hidden; /* Needed for border-radius with children */
+            /* Transitions */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .video-section {
+             flex-grow: 3; /* Video section takes more space */
+             min-width: 400px;
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+        }
+        .controls-section {
+             flex-grow: 1; /* Controls section takes less space */
+             min-width: 320px;
+             max-height: 85vh;
+             overflow-y: auto;
+        }
+
+        .video-section:hover,
+        .controls-section:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3); /* Subtle glow effect */
+            /* transform: translateY(-2px); /* Optional: Slight lift effect */
+        }
+        /* --- End Section Effects --- */
+
+
+        .controls-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .controls-section::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 10px;
+        }
+
+        .controls-section::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 10px;
+            border: 2px solid var(--bg-color);
+        }
+
+        .controls-section::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary-hover);
+        }
+
+        #video_feed_img {
+            width: 100%;
+            max-width: 1000px;
+            height: auto;
+            border: 1px solid var(--border-color);
+            background-color: #000;
+            border-radius: 8px;
+            display: block;
+        }
+
+        /* Sign Overlay - Already has transitions */
+        #signOverlayImage {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            max-width: 150px;
+            max-height: 150px;
+            height: auto;
+            background-color: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 5px;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease; /* Slightly slower fade */
+            object-fit: contain;
+            transform: scale(0.9);
+            pointer-events: none;
+        }
+
+        #signOverlayImage.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        h2:not(.subtitle) {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.1);
+            /* Added transition for potential future group effects */
+            transition: background-color 0.3s ease;
+        }
+        /* Optional: Subtle hover on control groups */
+        /* .control-group:hover { background-color: rgba(255, 255, 255, 0.03); } */
+
+
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .instructions {
+            font-size: 0.85em;
+            color: var(--instruction-color);
+            margin-top: -5px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        /* --- Added Transitions & Hover Effects for Radio Buttons --- */
+        .radio-group label {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            font-weight: normal;
+            cursor: pointer;
+            color: var(--text-color);
+            padding: 5px 8px; /* Added padding for hover background */
+            border-radius: 4px; /* Rounded corners for hover */
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .radio-group label:hover {
+            background-color: rgba(255, 255, 255, 0.08); /* Subtle background on hover */
+            color: #fff; /* Slightly brighter text */
+        }
+        /* --- End Radio Button Effects --- */
+
+
+        .radio-group input[type="radio"] {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            margin-right: 8px;
+            cursor: pointer;
+            position: relative;
+            top: 2px;
+            transition: background-color 0.2s ease, border-color 0.2s ease; /* Transition for check */
+        }
+
+        .radio-group input[type="radio"]:checked {
+            background-color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .radio-group input[type="radio"]:checked::before {
+            content: '';
+            display: block;
+            width: 6px;
+            height: 6px;
+            background-color: var(--card-bg);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #sentenceOutput {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            font-size: 1.1em;
+            min-height: 80px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            resize: vertical;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Added focus transition */
+        }
+
+        #sentenceOutput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.4); /* Enhanced focus ring */
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* --- Enhanced Button Transitions & Hover Effects --- */
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            /* Updated transition */
+            transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+            flex-grow: 1;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.4); /* Brighter shadow on hover */
+            transform: translateY(-2px); /* Lift effect */
+        }
+        button:active:not(:disabled) {
+             transform: translateY(0px) scale(0.98); /* Press effect */
+             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        button:disabled {
+            background-color: #404040;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none; /* No transform when disabled */
+        }
+        /* --- End Button Effects --- */
+
+
+        #translationResult {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 40px;
+            word-wrap: break-word;
+            color: var(--text-muted);
+            margin-top: 10px;
+            font-style: italic;
+            transition: background-color 0.3s ease; /* Transition for potential future effects */
+        }
+
+        #translationStatus {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 5px;
+            min-height: 1.2em;
+            transition: color 0.3s ease; /* Smooth color changes */
+        }
+
+        #status {
+            width: 100%;
+            text-align: center;
+            padding: 12px 0;
+            margin-top: 15px;
+            background-color: var(--status-bg);
+            color: var(--status-text);
+            border-top: 1px solid var(--border-color);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            box-sizing: border-box;
+            z-index: 10;
+            font-size: 0.95em;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth status changes */
+        }
+
+        .logging-controls {
+            display: none;
+            /* Transition applied via .active class toggle */
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .logging-controls.active {
+            display: block;
+            opacity: 1;
+            max-height: 1000px; /* Allow enough space */
+        }
+
+        .symbol-tabs {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 15px;
+            background: var(--input-bg);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .symbol-tabs::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .symbol-tabs::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 10px;
+        }
+
+        .symbol-tabs::-webkit-scrollbar-thumb {
+            background-color: var(--text-muted);
+            border-radius: 10px;
+        }
+
+        .symbol-tabs::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-color);
+        }
+
+        /* --- Added Transitions & Hover Effects for Symbol Buttons --- */
+        .symbol-tabs button {
+            background-color: #3a3a3a;
+            color: var(--text-color);
+            min-width: 40px;
+            margin: 0;
+            padding: 6px 10px;
+            font-size: 0.9em;
+            flex-grow: 0;
+            box-shadow: none;
+            border: 1px solid var(--input-border);
+            border-radius: 4px; /* Added border-radius */
+            transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease; /* Added transitions */
+        }
+
+        .symbol-tabs button:hover:not(:disabled) {
+            background-color: #4a4a4a;
+            transform: scale(1.05); /* Scale up on hover */
+        }
+
+        .symbol-tabs button.selected {
+            background-color: var(--selected-bg);
+            color: white;
+            font-weight: bold;
+            border-color: var(--primary-color);
+            transform: scale(1.05); /* Keep scaled when selected */
+        }
+         .symbol-tabs button:active:not(:disabled) {
+             transform: scale(0.98); /* Press effect */
+         }
+        /* --- End Symbol Button Effects --- */
+
+
+        #selectedSymbolDisplay {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 15px 0;
+        }
+
+        /* Hidden sections already have transitions */
+        .hidden-in-logging {
+            display: block;
+            transition: opacity 0.4s ease, max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease, border 0.4s ease; /* Slightly slower */
+            overflow: hidden;
+            opacity: 1;
+            max-height: 500px; /* Adjust as needed */
+        }
+
+        .hidden-in-logging.hide {
+            opacity: 0;
+            max-height: 0;
+            margin-top: 0; /* Ensure no margin when hidden */
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0; /* Transition border */
+            overflow: hidden;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .video-section,
+            .controls-section {
+                width: 95%;
+                max-width: none;
+                margin: 10px 0;
+                flex-basis: auto;
+                max-height: none;
+            }
+
+            .controls-section {
+                overflow-y: visible;
+            }
+
+            #signOverlayImage {
+                max-width: 100px;
+                max-height: 100px;
+                bottom: 10px;
+                left: 10px;
+            }
+        }
+
+        /* Flash Animation - Already present */
+        .flash {
+            animation: flash-animation 0.5s ease;
+        }
+
+        @keyframes flash-animation {
+            0% {
+                background-color: var(--selected-bg);
+            }
+            50% {
+                background-color: #28a745; /* Green flash */
+            }
+            100% {
+                background-color: var(--selected-bg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Saigai</h1>
+    <h2 class="subtitle">ASL & ISL Gesture Recognition with Text Generation and Translation</h2>
+
+    <div class="container">
+        <div class="video-section">
+            <h2>Live Feed</h2>
+            <p class="instructions" style="text-align: center; margin-top: -15px; margin-bottom: 10px;">
+                Position your hand(s) in the frame. Recognized sign images appear below.
+            </p>
+            <img id="video_feed_img" src="{{ url_for('video_feed') }}" alt="Video Feed">
+            <img id="signOverlayImage" src="" alt="Detected Sign" loading="lazy">
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <label>Recognition Mode:</label>
+                <p class="instructions">Select American Sign Language (ASL), Indian Sign Language (ISL), or Logging mode to record new gestures.</p>
+                <div class="radio-group" id="modeSelection">
+                    {% for mode_idx, mode_name in modes.items() %}
+                    <label>
+                        <input type="radio" name="mode" value="{{ mode_idx }}" {% if mode_idx == current_mode %}checked{% endif %}>
+                        {{ mode_name }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="control-group logging-controls" id="loggingControls">
+                <label>Logging Language:</label>
+                <p class="instructions">Choose whether to log for 1-handed (ASL) or 2-handed (ISL) gestures.</p>
+                <div class="radio-group" id="logLangSelection">
+                    <label><input type="radio" name="log_lang" value="ASL (1 Hand)" checked> ASL (1 Hand)</label>
+                    <label><input type="radio" name="log_lang" value="ISL (2 Hands)"> ISL (2 Hands)</label>
+                </div>
+                <hr>
+                <label>Symbol to Log: (<span id="selectedSymbolDisplay">None</span> selected)</label>
+                <p class="instructions">Select the letter/number you are currently signing, then click 'Log Data'. Ensure clear background & good lighting.</p>
+                <div class="symbol-tabs">
+                    </div>
+                <button id="logButton" disabled>Log Data</button>
+            </div>
+
+            <div class="control-group hidden-in-logging" id="sentenceSection">
+                <label for="sentenceOutput">Detected Sentence:</label>
+                <p class="instructions">Hold signs steadily to form sentences. Use 'Clear' or 'Delete Last'. Text is editable.</p>
+                <textarea id="sentenceOutput">{{ sentence }}</textarea>
+                <div class="button-group">
+                    <button id="clearButton">Clear</button>
+                    <button id="deleteLastButton">Delete Last</button>
+                </div>
+            </div>
+
+            <div class="control-group hidden-in-logging" id="translationSection">
+                <label>Translation (English to Tamil):</label>
+                <p class="instructions">Translate the English sentence from the box above into Tamil using NLLB.</p>
+                <button id="translateButton">Translate Sentence</button>
+                <div id="translationResult">[Translation Result]</div>
+                <small id="translationStatus"></small>
+            </div>
+        </div>
+    </div>
+
+    <div id="status">Status: Initializing...</div>
+
+    <script>
+        // --- Global Variables & Constants ---
+        let currentMode = {{ current_mode }};
+        const loggingModeIndex = {{ log_mode_index }};
+        let selectedLogSymbol = null;
+        let selectedLogSymbolIndex = -1;
+        let isTranslationActive = false;
+        let translationPollInterval = null;
+        let statusPollInterval = null;
+        let isSentenceBoxFocused = false;
+
+        // --- DOM Element References ---
+        const modeRadios = document.querySelectorAll('input[name="mode"]');
+        const loggingControlsDiv = document.getElementById('loggingControls');
+        const logButton = document.getElementById('logButton');
+        const selectedSymbolDisplay = document.getElementById('selectedSymbolDisplay');
+        const symbolTabsDiv = document.querySelector('.symbol-tabs');
+        const sentenceOutput = document.getElementById('sentenceOutput');
+        const clearButton = document.getElementById('clearButton');
+        const deleteLastButton = document.getElementById('deleteLastButton');
+        const translateButton = document.getElementById('translateButton');
+        const translationResultDiv = document.getElementById('translationResult');
+        const translationStatusSpan = document.getElementById('translationStatus');
+        const statusDiv = document.getElementById('status');
+        const logLangRadios = document.querySelectorAll('input[name="log_lang"]');
+        const sentenceSectionDiv = document.getElementById('sentenceSection');
+        const translationSectionDiv = document.getElementById('translationSection');
+        const signOverlayImage = document.getElementById('signOverlayImage');
+
+        // --- UI Update Functions ---
+        function updateUILoggingState(mode) {
+            const isLogging = (mode === loggingModeIndex);
+            // Use classList.toggle for cleaner state management
+            loggingControlsDiv.classList.toggle('active', isLogging);
+            sentenceSectionDiv.classList.toggle('hide', isLogging);
+            translationSectionDiv.classList.toggle('hide', isLogging);
+
+            logButton.disabled = !isLogging || (selectedLogSymbolIndex === -1);
+            clearButton.disabled = isLogging;
+            deleteLastButton.disabled = isLogging;
+            translateButton.disabled = isLogging || isTranslationActive;
+
+            if (isLogging) {
+                signOverlayImage.src = '';
+                signOverlayImage.classList.remove('visible');
+            }
+            manageStatusPolling();
+        }
+
+        function updateSelectedSymbolDisplay() {
+            selectedSymbolDisplay.textContent = selectedLogSymbol || "None";
+            logButton.disabled = currentMode !== loggingModeIndex || selectedLogSymbolIndex === -1;
+        }
+
+        function deselectAllSymbolButtons() {
+            document.querySelectorAll('.symbol-tabs button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+        }
+
+        // --- Polling Functions ---
+        function manageStatusPolling() {
+            if (currentMode !== loggingModeIndex) {
+                if (!statusPollInterval) {
+                    statusPollInterval = setInterval(fetchStatus, 800);
+                    console.log("Status polling started.");
+                }
+            } else {
+                stopStatusPolling();
+            }
+        }
+
+        function stopStatusPolling() {
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+                console.log("Status polling stopped.");
+            }
+        }
+
+        function pollTranslationStatus() {
+            if (!isTranslationActive) {
+                stopTranslationPolling();
+                return;
+            }
+            fetch('/get_translation_status')
+                .then(response => response.json())
+                .then(data => {
+                    isTranslationActive = data.active;
+                    translationStatusSpan.textContent = isTranslationActive ? "Translating..." : "";
+                    if (translationResultDiv.textContent !== data.result) {
+                        translationResultDiv.textContent = data.result;
+                    }
+                    if (!isTranslationActive) {
+                        stopTranslationPolling();
+                    }
+                })
+                .catch(error => {
+                    console.error('Poll translation error:', error);
+                    translationStatusSpan.textContent = "Polling error";
+                    stopTranslationPolling();
+                    isTranslationActive = false;
+                });
+        }
+
+        function stopTranslationPolling() {
+            if (translationPollInterval) {
+                clearInterval(translationPollInterval);
+                translationPollInterval = null;
+                console.log("Translation polling stopped.");
+            }
+            translateButton.disabled = (currentMode === loggingModeIndex);
+        }
+
+        // --- Fetch Functions ---
+        function fetchStatus() {
+            if (currentMode === loggingModeIndex || !statusPollInterval) return;
+
+            fetch('/get_current_status')
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (!isSentenceBoxFocused && sentenceOutput.value !== data.sentence) {
+                        sentenceOutput.value = data.sentence;
+                    }
+                    const imageUrl = data.sign_image_url;
+                    if (imageUrl) {
+                        if (signOverlayImage.getAttribute('src') !== imageUrl) {
+                            signOverlayImage.src = imageUrl;
+                        }
+                        signOverlayImage.alt = data.current_sign || 'Detected Sign';
+                        if (!signOverlayImage.classList.contains('visible')) {
+                            signOverlayImage.classList.add('visible');
+                        }
+                    } else {
+                        if (signOverlayImage.classList.contains('visible')) {
+                            signOverlayImage.classList.remove('visible');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    if (signOverlayImage.classList.contains('visible')) {
+                        signOverlayImage.classList.remove('visible');
+                    }
+                });
+        }
+
+        // --- Event Listeners ---
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const newMode = parseInt(this.value);
+                if (newMode !== currentMode) {
+                    stopStatusPolling();
+                    currentMode = newMode;
+                    selectedLogSymbol = null;
+                    selectedLogSymbolIndex = -1;
+                    updateSelectedSymbolDisplay();
+                    deselectAllSymbolButtons();
+
+                    fetch('/set_mode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode: currentMode })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log("Mode changed:", data.mode_name);
+                            sentenceOutput.value = data.sentence;
+                            statusDiv.textContent = `Status: Mode changed to ${data.mode_name}`;
+                            translationResultDiv.textContent = "[Translation Result]";
+                            translationStatusSpan.textContent = "";
+                            stopTranslationPolling();
+                        } else {
+                            console.error("Set mode failed:", data.error);
+                            statusDiv.textContent = `Error: ${data.error}`;
+                        }
+                        updateUILoggingState(currentMode);
+                    })
+                    .catch(error => {
+                        console.error('Error setting mode:', error);
+                        statusDiv.textContent = 'Error: Could not change mode';
+                        updateUILoggingState(currentMode);
+                    });
+                }
+            });
+        });
+
+        sentenceOutput.addEventListener('focus', () => { isSentenceBoxFocused = true; });
+        sentenceOutput.addEventListener('blur', () => { isSentenceBoxFocused = false; });
+
+        clearButton.addEventListener('click', () => {
+            if (currentMode !== loggingModeIndex) {
+                sentenceOutput.value = '';
+                fetch('/clear_sentence', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(!data.success) console.error("Backend clear failed");
+                        fetchStatus();
+                    });
+            }
+        });
+
+        deleteLastButton.addEventListener('click', () => {
+            if (currentMode !== loggingModeIndex) {
+                sentenceOutput.value = sentenceOutput.value.slice(0, -1);
+                fetch('/delete_last', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(!data.success) {
+                             console.error("Backend delete failed");
+                             fetchStatus();
+                        }
+                    })
+                    .catch(err => {
+                         console.error("Delete error:", err);
+                         fetchStatus();
+                    });
+            }
+        });
+
+        logButton.addEventListener('click', () => {
+            if (currentMode === loggingModeIndex && selectedLogSymbolIndex !== -1) {
+                const selectedLogLang = document.querySelector('input[name="log_lang"]:checked').value;
+                statusDiv.textContent = `Logging ${selectedLogSymbol}...`;
+                fetch('/log_data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol_index: selectedLogSymbolIndex,
+                        log_lang: selectedLogLang
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log(data.message);
+                        statusDiv.textContent = `Status: ${data.message}`;
+                        logButton.classList.add('flash');
+                        setTimeout(()=> logButton.classList.remove('flash'), 500);
+                    } else {
+                        console.error("Log failed:", data.error);
+                        statusDiv.textContent = `Error: ${data.error}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Log error:', error);
+                    statusDiv.textContent = 'Error: Log request failed';
+                });
+            } else {
+                statusDiv.textContent = 'Status: Select symbol first.';
+            }
+        });
+
+        translateButton.addEventListener('click', () => {
+            if (currentMode === loggingModeIndex) return;
+            const textToTranslate = sentenceOutput.value.trim();
+            if (!textToTranslate) {
+                translationResultDiv.textContent = "Nothing to translate.";
+                return;
+            }
+            if (isTranslationActive) {
+                translationStatusSpan.textContent = "Translation in progress.";
+                return;
+            }
+            translateButton.disabled = true;
+            isTranslationActive = true;
+            translationStatusSpan.textContent = "Starting translation...";
+            translationResultDiv.textContent = "[Translating...]";
+            fetch('/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: textToTranslate })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (!translationPollInterval) {
+                        translationPollInterval = setInterval(pollTranslationStatus, 1500);
+                        console.log("Translation polling started.");
+                    }
+                } else {
+                    translationResultDiv.textContent = `Error: ${data.error}`;
+                    translationStatusSpan.textContent = "Translation failed";
+                    isTranslationActive = false;
+                    stopTranslationPolling();
+                }
+            })
+            .catch(error => {
+                console.error('Start translation error:', error);
+                translationResultDiv.textContent = "Error initiating translation.";
+                translationStatusSpan.textContent = "Request failed";
+                isTranslationActive = false;
+                stopTranslationPolling();
+            });
+        });
+
+        signOverlayImage.onerror = function() {
+            console.error("Error loading image:", signOverlayImage.src);
+            signOverlayImage.classList.remove('visible');
+            signOverlayImage.src = '';
+        };
+
+        // --- Initialization ---
+        const symbols = {
+            "Letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+            "Numbers": "0123456789".split("")
+        };
+        const labelsMap = [...symbols.Letters, ...symbols.Numbers];
+
+        Object.entries(symbols).forEach(([category, symList]) => {
+            symList.forEach(sym => {
+                const btn = document.createElement('button');
+                btn.textContent = sym;
+                btn.type = 'button';
+                btn.addEventListener('click', () => {
+                    if (currentMode === loggingModeIndex) {
+                        deselectAllSymbolButtons();
+                        btn.classList.add('selected');
+                        selectedLogSymbol = sym;
+                        selectedLogSymbolIndex = labelsMap.indexOf(sym);
+                        updateSelectedSymbolDisplay();
+                    }
+                });
+                symbolTabsDiv.appendChild(btn);
+            });
+        });
+
+        updateUILoggingState(currentMode);
+        manageStatusPolling();
+
+        // Flash animation style is already defined in the <style> block,
+        // no need to dynamically add it again unless it was removed.
+        // const styleSheet = document.createElement("style");
+        // styleSheet.type = "text/css";
+        // styleSheet.innerText = `.flash { animation: flash-animation 0.5s ease; } @keyframes flash-animation { 0% { background-color: var(--selected-bg); } 50% { background-color: #28a745; } 100% { background-color: var(--selected-bg); } }`;
+        // document.head.appendChild(styleSheet);
+
+        statusDiv.textContent = 'Status: Ready.';
+
+    </script>
+</body>
+
+</html>
+    
